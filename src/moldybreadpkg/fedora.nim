@@ -220,28 +220,51 @@ method write_output(this: FedoraRecord, filename: string, contents: string, outp
   writeFile(path, contents)
   fmt"Created {filename} at {output_directory}."
 
-method download(this: FedoraRecord, output_directory: string, suffix=""): bool {. base .} =
+method download(this: FedoraRecord, output_directory: string, suffix="", ignore_pid=false): bool {. base .} =
   let response = this.client.request(this.uri, httpMethod = HttpGet)
   if response.status == "200 OK":
     let extension = this.get_extension(response.headers)
-    discard this.write_output(fmt"{this.pid}{suffix}{extension}", response.body, output_directory)
+    if ignore_pid == false:
+      discard this.write_output(fmt"{this.pid}{suffix}{extension}", response.body, output_directory)
+    else:
+      discard this.write_output(fmt"{suffix}{extension}", response.body, output_directory)
     true
   else:
     false
 
+method get(this: FedoraRecord): string {. base .} =
+  let response = this.client.request(this.uri, httpMethod = HttpGet)
+  if response.status == "200 OK":
+    notice(fmt"Successfully retrieved {this.uri} and contents for {this.pid}.")
+    response.body
+  else:
+    error(fmt"{response.status}: FedoraRequest.get() failed on {this.pid}.")
+    ""
+
 method download_page_with_relationship(this: FedoraRecord, output_directory, book_pid, page_number: string): bool {. base .} =
   let response = this.client.request(this.uri, httpMethod = HttpGet)
   if response.status == "200 OK":
-    let 
-      extension = this.get_extension(response.headers)
-      namespace = book_pid.split(""":""")[0]
-      book = book_pid.split(""":""")[1]
-      output_path = fmt"{output_directory}/{namespace}/{book}"
-    if not existsDir(output_path):
-      createDir(output_path)
-    notice(fmt"Successfully downloaded page {page_number} of {book_pid} from {this.pid}.")
-    discard this.write_output(fmt"{page_number}{extension}", response.body, output_path)
-    true
+    try:
+      let 
+        extension = this.get_extension(response.headers)
+        book = FedoraRecord(client: this.client, uri: fmt"http://localhost:8080/fedora/objects/{book_pid}/datastreams/MODS/content", pid: book_pid)
+        book_mods = book.get()
+        local_identifier = get_text_of_element_with_attribute(book_mods, "identifier", ("type", "local"))[0]
+        namespace = book_pid.split(""":""")[0]
+        output_path = fmt"{output_directory}/{namespace}/{local_identifier}"
+      if not existsDir(output_path):
+        createDir(output_path)
+      if not existsFile(fmt"{output_path}/mods.xml"):
+        discard book.download(output_path, "mods", ignore_pid=true)
+        notice(fmt"MODS does not exist for {local_identifier} / {book_pid}. Creating.")
+      else:
+        notice(fmt"MODS exists for {local_identifier} / {book_pid} at {output_path}/mods.xml. Skipping.")
+      notice(fmt"Successfully downloaded page {page_number} of {book_pid} from {this.pid} into book {local_identifier}.")
+      discard this.write_output(fmt"{align(page_number, 6, '0')}{extension}", response.body, output_path)
+      true
+    except IndexError:
+      fatal(fmt"Could not find local identifier for {book_pid}. Because of this, no pages will be downloaded for this book.")
+      false
   elif this.retries > 0:
     this.retries -= 1
     error(fmt"{response.status} - Failed to download page {page_number} of {book_pid} from {this.pid}.")
@@ -264,15 +287,6 @@ method audit_responsibility(this: FedoraRecord, username: string): bool {. base 
   if response.status == "200 OK":
     if username in this.parse_string(response.body, "audit:responsibility"):
       result = true
-
-method get(this: FedoraRecord): string {. base .} =
-  let response = this.client.request(this.uri, httpMethod = HttpGet)
-  if response.status == "200 OK":
-    notice(fmt"Successfully retrieved {this.uri} and contents for {this.pid}.")
-    response.body
-  else:
-    error(fmt"{response.status}: FedoraRequest.get() failed on {this.pid}.")
-    ""
 
 method get_history(this: FedoraRecord): seq[string] {. base .} =
   let response = this.client.request(this.uri, httpMethod = HttpGet)
