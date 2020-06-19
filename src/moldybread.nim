@@ -607,6 +607,17 @@ when isMainModule:
   except RangeError:
     echo "No matching results in result set."
   except YamlConstructionError:
-    echo "Must set value of logfile in config.yml.  See default_config.yml."
+    let
+      yaml_error = getCurrentExceptionMsg()
+    if yaml_error.startsWith("While constructing ConfigSettings: Unknown field"):
+      let
+        problem_field = yaml_error.split("While constructing ConfigSettings: Unknown field: ")[1]
+      echo fmt"Your YAML config file contains an extra field: {problem_field}{'\n'}{'\n'}Remove it and rerun."
+    elif yaml_error.startsWith("While constructing ConfigSettings: Missing field"):
+      let
+        problem_field = yaml_error.split("While constructing ConfigSettings: Missing field: ")[1]
+      echo fmt"Your YAML config file is missing a field:  {problem_field}{'\n'}{'\n'}Add it and rerun."
+    else:
+      echo yaml_error
   except YamlStreamError:
     echo fmt"Can't open yaml file at {opts.yaml_path}.  Please use the full path for now until I figure out how relative pathing works."
