@@ -270,8 +270,13 @@ method get(this: FedoraRecord): string {. base .} =
   if response.status == "200 OK":
     notice(fmt"Successfully retrieved {this.uri} and contents for {this.pid}.")
     response.body
-  else:
+  elif this.retries > 0:
+    this.retries -= 1
     error(fmt"{response.status}: FedoraRequest.get() failed on {this.pid}.")
+    sleep(this.wait_time)
+    this.get()
+  else:
+    fatal(fmt"{response.status}: FedoraRequest.get() failed on {this.pid}.")
     ""
 
 method get_history(this: FedoraRecord): seq[string] {. base .} =
@@ -1124,7 +1129,27 @@ method find_xacml_restrictions*(this: FedoraRequest): seq[(string, seq[XACMLRule
       bar.increment()
   bar.finish()
 
+method get_object_xml*(this: FedoraRequest): seq[(string, string)] {. base .} =
+  ## What does this do?
+  ## 
+  var
+    pid: string
+    bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
+  let
+    ticks = progress_prep(len(this.results))
+  echo fmt"Getting object XML:{'\n'}"
+  bar.start()
+  for i in 1..len(this.results):
+    pid = this.results[i-1]
+    let
+      new_record = FedoraRecord(client: this.client, uri: fmt"{this.base_url}/fedora/objects/{pid}/objectXML", pid: pid)
+      response = new_record.get()
+    result.add((pid, response))
+    if i in ticks:
+      bar.increment()
+  bar.finish()
+
 when isMainModule:
-  let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
+  let fedora_connection = initFedoraRequest(pid_part="utk.ir.td:12580", output_directory="output", auth=("fedoraAdmin", "for8s4non"))
   fedora_connection.results = fedora_connection.populate_results()
-  echo fedora_connection.download_page_with_book_relationship("OBJ")
+  echo fedora_connection.get_object_xml()
