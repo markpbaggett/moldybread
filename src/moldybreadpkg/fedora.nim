@@ -615,7 +615,7 @@ method download_object_xml*(this: FedoraRequest): Message {. base .} =
     pid: string
     bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
   let ticks = progress_prep(len(this.results))
-  echo "\n\nDownloading Foxml:\n"
+  echo "\n\nDownloading Object XML:\n"
   bar.start()
   for i in 1..len(this.results):
     pid = this.results[i-1]
