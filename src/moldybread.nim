@@ -134,6 +134,15 @@ when isMainModule:
   ## .. code-block:: sh
   ##
   ##    moldybread -o download_foxml -n test -y /full/path/to/my/yaml/file
+  ## 
+  ## Download Object XMl Record
+  ## =====================
+  ##
+  ## Object XML records can be downloaded by supplying a namespace.
+  ##
+  ## .. code-block:: sh
+  ##
+  ##    moldybread -o download_object_xml -n test -y /full/path/to/my/yaml/file
   ##
   ## Update Metadata
   ## ===============
@@ -374,7 +383,7 @@ when isMainModule:
  """
   var p = newParser(fmt"Moldy Bread:  See https://markpbaggett.github.io/moldybread/moldybread.html for documentation and examples on how to use this package.{'\n'}{'\n'}"):
     help(banner)
-    option("-o", "--operation", help="Specify operation", choices = @["harvest_datastream", "harvest_datastream_no_pages", "update_metadata", "update_metadata_and_delete_old_versions", "download_foxml", "version_datastream", "change_object_state", "purge_old_versions", "find_objs_missing_dsid", "get_datastream_history", "get_datastream_at_date", "validate_checksums", "find_distinct_datastreams", "download_all_versions", "audit_responsibility", "update_solr", "find_objects_by_versions", "find_xacml_restrictions", "check_management_restrictions", "get_xacml_exceptions", "download_book_pages"])
+    option("-o", "--operation", help="Specify operation", choices = @["harvest_datastream", "harvest_datastream_no_pages", "update_metadata", "update_metadata_and_delete_old_versions", "download_foxml", "download_object_xml", "version_datastream", "change_object_state", "purge_old_versions", "find_objs_missing_dsid", "get_datastream_history", "get_datastream_at_date", "validate_checksums", "find_distinct_datastreams", "download_all_versions", "audit_responsibility", "update_solr", "find_objects_by_versions", "find_xacml_restrictions", "check_management_restrictions", "get_xacml_exceptions", "download_book_pages"])
     option("-d", "--dsid", help="Specify datastream id.", default="")
     option("-n", "--namespaceorpid", help="Populate results based on namespace or PID.", default="")
     option("-dc", "--dcsearch", help="Populate results based on dc field and strings.  See docs for formatting info.", default="")
@@ -430,6 +439,13 @@ when isMainModule:
         else:
           fedora_connection.results = fedora_connection.populate_results()
           let test = fedora_connection.download_foxml()
+          echo fmt"{'\n'}Successfully downloaded {len(test.successes)} record(s).  {len(test.errors)} error(s) occurred."
+      of "download_object_xml":
+        if opts.namespaceorpid == "" and opts.dcsearch == "" and opts.terms == "":
+          echo "Must specify how you want to populated results: -n for Pid or Namespace, -dc for dc fields and strings, or -t for keyword terms."
+        else:
+          fedora_connection.results = fedora_connection.populate_results()
+          let test = fedora_connection.download_object_xml()
           echo fmt"{'\n'}Successfully downloaded {len(test.successes)} record(s).  {len(test.errors)} error(s) occurred."
       of "version_datastream":
         if opts.namespaceorpid == "" and opts.dcsearch == "" and opts.terms == "":

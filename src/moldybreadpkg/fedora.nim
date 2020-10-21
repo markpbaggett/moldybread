@@ -596,6 +596,42 @@ method download_foxml*(this: FedoraRequest): Message {. base .} =
   bar.finish()
   Message(errors: errors, successes: successes, attempts: attempts)
 
+method download_object_xml*(this: FedoraRequest): Message {. base .} =
+  ## Downloads the object XML for each object in a results set.
+  ##
+  ## This method downloads the object xml record for all matching objects.
+  ##
+  ## Example:
+  ## 
+  ## .. code-block:: nim
+  ##
+  ##    let fedora_connection = initFedoraRequest(output_directory="/home/harrison/nim_projects/moldybread/output", pid_part="test")
+  ##    fedora_connection.results = fedora_connection.populate_results()
+  ##    discard fedora_connection.download_object_xml().successes
+  ##
+  var
+    successes, errors: seq[string]
+    attempts: int
+    pid: string
+    bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
+  let ticks = progress_prep(len(this.results))
+  echo "\n\nDownloading Foxml:\n"
+  bar.start()
+  for i in 1..len(this.results):
+    pid = this.results[i-1]
+    let
+      new_record = FedoraRecord(client: this.client, uri: fmt"{this.base_url}/fedora/objects/{pid}/objectXML", pid: pid)
+      response = new_record.download(this.output_directory)
+    if response:
+      successes.add(pid)
+    else:
+      errors.add(pid)
+    attempts += 1
+    if i in ticks:
+      bar.increment()
+  bar.finish()
+  Message(errors: errors, successes: successes, attempts: attempts)
+
 method audit_responsibility*(this: FedoraRequest, username: string): Message {. base .} =
   ## Looks for objects created or modified by a specific user.
   ##
