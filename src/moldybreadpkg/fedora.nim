@@ -305,6 +305,16 @@ method modify_metadata_datastream(this: FedoraRecord, multipart_path: string): b
   except HttpRequestError:
     false
 
+method purge_relationship(this: FedoraRecord): bool {. base .} =
+  try:
+    let response = this.client.request(this.uri, httpMethod = HttpDelete)
+    if response.body == "true":
+      true
+    else:
+      false
+  except HttpRequestError:
+    false
+
 method put(this: FedoraRecord): bool {. base .} =
   try:
     discard this.client.request(this.uri, httpMethod = HttpPut)
@@ -1160,7 +1170,43 @@ method find_xacml_restrictions*(this: FedoraRequest): seq[(string, seq[XACMLRule
       bar.increment()
   bar.finish()
 
+method purge_xacml_inheritance_relationships*(this: FedoraRequest, inheritance_object: string): Message {. base .} =
+  ## Returns a sequence of tuples with the object and whether or not its xacml inheritance relationship was deleted.
+  ## 
+  ## Example:
+  ##
+  ## let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
+  ## fedora_connection.results = fedora_connection.populate_results()
+  ## discard fedora_connection.purge_xacml_inheritance_relationships("islandora:test")
+  ## 
+  var
+    pid: string
+    bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
+    successes, errors: seq[string]
+    attempts: int
+  let
+    ticks = progress_prep(len(this.results))
+  echo fmt"Purging relationships for all objects in set:{'\n'}"
+  bar.start()
+  for i in 1..len(this.results):
+    pid = this.results[i-1]
+    var
+      request_string: string 
+    request_string = fmt"{this.base_url}/fedora/objects/{pid}/relationships?subject=info%3afedora%2f{pid}&predicate=http%3a%2f%2fislandora.ca%2fontology%2frelsext%23inheritXacmlFrom&object=info%3afedora%2f{inheritance_object}"
+    let
+      new_record = FedoraRecord(client: this.client, uri: request_string, pid: pid)
+      response = new_record.purge_relationship()
+    if response == true:
+      successes.add(pid)
+    else:
+      errors.add(pid)
+    attempts += 1
+    if i in ticks:
+      bar.increment()
+  bar.finish()
+  Message(errors: errors, successes: successes, attempts: attempts)
+
 when isMainModule:
   let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
   fedora_connection.results = fedora_connection.populate_results()
-  echo fedora_connection.download_page_with_book_relationship("OBJ")
+  echo fedora_connection.purge_xacml_inheritance_relationships("islandora:test").successes
