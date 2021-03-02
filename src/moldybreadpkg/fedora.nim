@@ -354,6 +354,16 @@ method update_solr_record(this: GsearchConnection, pid: string): bool {. base .}
     # echo fmt"{request.status}: PID {pid} failed."
     false
 
+method add_relationship(this: FedoraRecord): bool {. base .} =
+  let request = this.client.request(this.uri, httpMethod=HttpPost)
+  echo this.uri
+  if request.status == "200 OK":
+    true
+  else:
+    echo request.status
+    echo request.body
+    false
+
 method populate_results*(this: FedoraRequest): seq[string] {. base .} =
   ## Populates results for a Fedora request.
   ##
@@ -1206,7 +1216,70 @@ method purge_xacml_inheritance_relationships*(this: FedoraRequest, inheritance_o
   bar.finish()
   Message(errors: errors, successes: successes, attempts: attempts)
 
+method change_content_models*(this: FedoraRequest, old_model: string): Message {. base .} =
+  ## Changes objects in a set from its old model to binary.
+  ##
+  var
+    pid: string
+    bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
+    successes, errors: seq[string]
+    attempts: int
+  let
+    ticks = progress_prep(len(this.results))
+  echo fmt"Changing content models for all objects in this set with the {old_model} content model:{'\n'}"
+  bar.start()
+  for i in 1..len(this.results):
+    pid = this.results[i-1]
+    var
+      request_string: string 
+    request_string = fmt"{this.base_url}/fedora/objects/{pid}/relationships?subject=info%3afedora%2f{pid}&predicate=info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel&object=info%3afedora%2fislandora%3a{old_model}"
+    var
+      new_record = FedoraRecord(client: this.client, uri: request_string, pid: pid)
+      response = new_record.purge_relationship()
+    if response == true:
+      request_string = fmt"{this.base_url}/fedora/objects/{pid}/relationships/new?subject=info%3afedora%2f{pid}&predicate=info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel&object=info%3afedora%2fislandora%3abinaryObjectCModel&isLiteral=false"
+      new_record = FedoraRecord(client: this.client, uri: request_string, pid: pid)
+      response = new_record.add_relationship()
+      if response == true:
+        successes.add(pid)
+      else:
+        errors.add(pid)
+    else:
+      errors.add(pid)
+    attempts += 1
+    if i in ticks:
+      bar.increment()
+  bar.finish()
+  Message(errors: errors, successes: successes, attempts: attempts)
+
+method add_new_relationship(this: FedoraRequest, predicate:string, obj: string, is_literal: bool): Message {. base .} =
+  var
+    pid: string
+    bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
+    successes, errors: seq[string]
+    attempts: int
+  let
+    ticks = progress_prep(len(this.results))
+  echo fmt"Adding a new relationship:{'\n'}"
+  bar.start()
+  for i in 1..len(this.results):
+    pid = this.results[i-1]
+    var
+      request_string = fmt"{this.base_url}/fedora/objects/{pid}/relationships/new?subject=info%3afedora%2f{pid}&predicate={predicate}&object={obj}&isLiteral={is_literal}"
+      new_record = FedoraRecord(client: this.client, uri: request_string, pid: pid)
+      response = new_record.add_relationship()
+    if response == true:
+      successes.add(pid)
+    else:
+      errors.add(pid)
+    attempts += 1
+    if i in ticks:
+      bar.increment()
+  bar.finish()
+  Message(errors: errors, successes: successes, attempts: attempts)
+
 when isMainModule:
   let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
   fedora_connection.results = fedora_connection.populate_results()
-  echo fedora_connection.purge_xacml_inheritance_relationships("islandora:test").successes
+  echo fedora_connection.change_content_models("sp%5fbasic%5fimage").successes
+  #echo fedora_connection.add_random_relationship_for_testing().successes
