@@ -1268,7 +1268,7 @@ method change_model_to_binary*(this: FedoraRequest, old_model: string): Message 
   bar.finish()
   Message(errors: errors, successes: successes, attempts: attempts)
 
-method add_new_relationship(this: FedoraRequest, predicate:string, obj: string, is_literal: bool): Message {. base .} =
+method add_new_relationship*(this: FedoraRequest, predicate:string, obj: string, is_literal: bool): Message {. base .} =
   ## Add a new relationship with the digital object as subject for all objects in a set.
   ##
   ## Example:
