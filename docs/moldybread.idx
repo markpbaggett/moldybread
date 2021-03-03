@@ -5,6 +5,7 @@ Populating Results	moldybread.html#populating-results	 Populating Results
 Harvest Datastream (including metadata)	moldybread.html#harvest-datastream-including-metadata	 Harvest Datastream (including metadata)	
 Harvest Datastream Unless It's a part of a Page	moldybread.html#harvest-datastream-unless-it-s-a-part-of-a-page	 Harvest Datastream Unless It's a part of a Page	
 Download FOXML Record	moldybread.html#download-foxml-record	 Download FOXML Record	
+Download Object XMl Record	moldybread.html#download-object-xml-record	 Download Object XMl Record	
 Update Metadata	moldybread.html#update-metadata	 Update Metadata	
 Update Metadata and Delete Old Versions	moldybread.html#update-metadata-and-delete-old-versions	 Update Metadata and Delete Old Versions	
 Version Datastream	moldybread.html#version-datastream	 Version Datastream	
@@ -23,3 +24,6 @@ Find XACML Rules and Exceptions for objects	moldybread.html#find-xacml-rules-and
 Check for Objects with no restrictions on management	moldybread.html#check-for-objects-with-no-restrictions-on-management	 Check for Objects with no restrictions on management	
 Get Exceptions to a Specific XACML Rule or Action	moldybread.html#get-exceptions-to-a-specific-xacml-rule-or-action	 Get Exceptions to a Specific XACML Rule or Action	
 Download Pages from Books and Keep Semantic Filenaming	moldybread.html#download-pages-from-books-and-keep-semantic-filenaming	 Download Pages from Books and Keep Semantic Filenaming	
+Purge XACML Inheritance Relationship for Objects	moldybread.html#purge-xacml-inheritance-relationship-for-objects	 Purge XACML Inheritance Relationship for Objects	
+Change Content Model to Binary	moldybread.html#change-content-model-to-binary	 Change Content Model to Binary	
+Add a New Relationship to all Digital Objects in a Set	moldybread.html#add-a-new-relationship-to-all-digital-objects-in-a-set	 Add a New Relationship to all Digital Objects in a Set	
