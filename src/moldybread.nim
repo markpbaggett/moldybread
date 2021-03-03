@@ -383,6 +383,26 @@ when isMainModule:
   ## 
   ##    moldybread -o purge_xacml_inheritance -n test -x "islandora:test"
   ## 
+  ## Change Content Model to Binary
+  ## ==============================
+  ## 
+  ## Change content models for all objects in a set with a specific content model to binary.
+  ## 
+  ## Example:
+  ## 
+  ## .. code-block:: sh
+  ## 
+  ##    moldybread -o change_model_to_binary -n test -x sp%5fbasic%5fimage
+  ## 
+  ## Add a New Relationship to all Digital Objects in a Set
+  ## ======================================================
+  ## 
+  ## Add a new relationshp to all objects in a set.  Subject must be the digital object and you must supply the predicate, object, and whether the object is a literal as an extra separated by semicolons.
+  ## 
+  ## .. code-block:: sh
+  ## 
+  ##    moldybread -o add_relationship_to_digital_object -n -x "info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel;info%3afedora%2fislandora%3abinaryObjectCModel;false"
+  ## 
   const banner =     """
   __  __       _     _         ____                      _ 
  |  \/  | ___ | | __| |_   _  | __ ) _ __ ___  __ _  __| |
@@ -394,7 +414,7 @@ when isMainModule:
  """
   var p = newParser(fmt"Moldy Bread:  See https://markpbaggett.github.io/moldybread/moldybread.html for documentation and examples on how to use this package.{'\n'}{'\n'}"):
     help(banner)
-    option("-o", "--operation", help="Specify operation", choices = @["harvest_datastream", "harvest_datastream_no_pages", "update_metadata", "update_metadata_and_delete_old_versions", "download_foxml", "download_object_xml", "version_datastream", "change_object_state", "purge_old_versions", "find_objs_missing_dsid", "get_datastream_history", "get_datastream_at_date", "validate_checksums", "find_distinct_datastreams", "download_all_versions", "audit_responsibility", "update_solr", "find_objects_by_versions", "find_xacml_restrictions", "check_management_restrictions", "get_xacml_exceptions", "download_book_pages", "purge_xacml_inheritance"])
+    option("-o", "--operation", help="Specify operation", choices = @["harvest_datastream", "harvest_datastream_no_pages", "update_metadata", "update_metadata_and_delete_old_versions", "download_foxml", "download_object_xml", "version_datastream", "change_object_state", "purge_old_versions", "find_objs_missing_dsid", "get_datastream_history", "get_datastream_at_date", "validate_checksums", "find_distinct_datastreams", "download_all_versions", "audit_responsibility", "update_solr", "find_objects_by_versions", "find_xacml_restrictions", "check_management_restrictions", "get_xacml_exceptions", "download_book_pages", "purge_xacml_inheritance", "change_model_to_binary", "add_relationship_to_digital_object"])
     option("-d", "--dsid", help="Specify datastream id.", default="")
     option("-n", "--namespaceorpid", help="Populate results based on namespace or PID.", default="")
     option("-dc", "--dcsearch", help="Populate results based on dc field and strings.  See docs for formatting info.", default="")
@@ -586,6 +606,26 @@ when isMainModule:
           fedora_connection.results = fedora_connection.populate_results()
           let result = fedora_connection.purge_xacml_inheritance_relationships(opts.extras)
           echo fmt"{'\n'}{'\n'}Purged XACML relationships for {len(result.successes)} objects.  {len(result.errors)} error occurred."
+      of "change_model_to_binary":
+        if opts.namespaceorpid == "" and opts.dcsearch == "" and opts.terms == "":
+          echo "Must specify how you want to populated results: -n for Pid or Namespace, -dc for dc fields and strings, or -t for keyword terms."
+        if opts.extras == "":
+          echo "Must specify the old model you want to replace with binary as an extra (-x flag)."
+        else:
+          fedora_connection.results = fedora_connection.populate_results()
+          let result = fedora_connection.change_model_to_binary(opts.extras)
+          echo fmt"{'\n'}{'\n'}Successfully changed content model for {len(result.successes)} objects.  {len(result.errors)} error occurred."
+      of "add_relationship_to_digital_object":
+        if opts.namespaceorpid == "" and opts.dcsearch == "" and opts.terms == "":
+          echo "Must specify how you want to populated results: -n for Pid or Namespace, -dc for dc fields and strings, or -t for keyword terms."
+        if opts.extras == "":
+          echo "Must specify the predicate and object of your new relationship and whether or not the object is a literal as an extra (-x flag) separated by a semicolon."
+        else:
+          fedora_connection.results = fedora_connection.populate_results()
+          let
+            populators = opts.extras.split(";")
+            result = fedora_connection.add_new_relationship(populators[0], populators[1], parseBool(populators[2]))
+          echo fmt"{'\n'}{'\n'}Successfully added new relationship for {len(result.successes)} objects.  {len(result.errors)} error occurred."
       of "find_xacml_restrictions":
         if opts.namespaceorpid == "" and opts.dcsearch == "" and opts.terms == "":
           echo "Must specify how you want to populated results: -n for Pid or Namespace, -dc for dc fields and strings, or -t for keyword terms."
