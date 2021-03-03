@@ -1277,7 +1277,7 @@ method add_new_relationship*(this: FedoraRequest, predicate:string, obj: string,
   ## 
   ##    let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
   ##    fedora_connection.results = fedora_connection.populate_results()
-  ##    discard fedora_connection.add_new_relationship(predicate="info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel", obj="info%3afedora%2fislandora%3abinaryObjectCModel&isLiteral=false")
+  ##    discard fedora_connection.add_new_relationship(predicate="info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel", obj="info%3afedora%2fislandora%3abinaryObjectCModel", is_literal=false)
   ## 
   var
     pid: string
