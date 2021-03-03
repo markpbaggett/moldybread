@@ -2,6 +2,8 @@ name: Build and Test
 
 on:
   push:
+    branches:
+      - master
     tags-ignore:
       - v*
 
@@ -27,32 +29,5 @@ jobs:
       run: |
         nimble refresh
         nimble install -y
-
     - name: Run tests
       run: nimble test
-  
-  os_x_build:
-    runs-on: macos-latest
-
-    steps:
-    - name: Checkout Moldybread
-      uses: actions/checkout@v2
-    
-    - name: Cache nimble things
-      id: cache-nimble
-      uses: actions/cache@v1
-      with:
-        path: ~/.nimble
-        key: ${{ runner.os }}-nimble-stable
-
-    - name: Setup nim
-      uses: jiro4989/setup-nim-action@v1.0.2
-    
-    - name: Install dependencies and my stuff
-      run: |
-        nimble refresh
-        nimble install -y
-
-    - name: Run tests
-      run: nimble test
-
