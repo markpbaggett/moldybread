@@ -1162,6 +1162,12 @@ method find_xacml_restrictions*(this: FedoraRequest): seq[(string, seq[XACMLRule
   ##
   ## Example:
   ##
+  ## .. code-block:: nim
+  ## 
+  ##    let fedora_connection = initFedoraRequest(pid_part="test")
+  ##    fedora_connection = fedora_connection.populate_results()
+  ##    discard fedora_connection.find_xacml_restrictions()
+  ## 
   var
     pid: string
     bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
@@ -1185,9 +1191,11 @@ method purge_xacml_inheritance_relationships*(this: FedoraRequest, inheritance_o
   ## 
   ## Example:
   ##
-  ## let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
-  ## fedora_connection.results = fedora_connection.populate_results()
-  ## discard fedora_connection.purge_xacml_inheritance_relationships("islandora:test")
+  ## .. code-block:: nim
+  ## 
+  ##    let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
+  ##    fedora_connection.results = fedora_connection.populate_results()
+  ##    discard fedora_connection.purge_xacml_inheritance_relationships("islandora:test")
   ## 
   var
     pid: string
@@ -1216,9 +1224,17 @@ method purge_xacml_inheritance_relationships*(this: FedoraRequest, inheritance_o
   bar.finish()
   Message(errors: errors, successes: successes, attempts: attempts)
 
-method change_content_models*(this: FedoraRequest, old_model: string): Message {. base .} =
-  ## Changes objects in a set from its old model to binary.
+method change_model_to_binary*(this: FedoraRequest, old_model: string): Message {. base .} =
+  ## Changes objects in a set from its old content model to the binary content model.
   ##
+  ## Example:
+  ## 
+  ## .. code-block:: nim
+  ## 
+  ##    let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
+  ##    fedora_connection.results = fedora_connection.populate_results()
+  ##    discard fedora_connection.change_content_models("sp%5fbasic%5fimage").successes
+  ## 
   var
     pid: string
     bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
@@ -1253,6 +1269,16 @@ method change_content_models*(this: FedoraRequest, old_model: string): Message {
   Message(errors: errors, successes: successes, attempts: attempts)
 
 method add_new_relationship(this: FedoraRequest, predicate:string, obj: string, is_literal: bool): Message {. base .} =
+  ## Add a new relationship with the digital object as subject for all objects in a set.
+  ##
+  ## Example:
+  ## 
+  ## .. code-block:: nim
+  ## 
+  ##    let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
+  ##    fedora_connection.results = fedora_connection.populate_results()
+  ##    discard fedora_connection.add_new_relationship(predicate="info%3afedora%2ffedora%2dsystem%3adef%2fmodel%23hasModel", obj="info%3afedora%2fislandora%3abinaryObjectCModel&isLiteral=false")
+  ## 
   var
     pid: string
     bar = newProgressBar(total=len(this.results), step=int(ceil(len(this.results)/100)))
@@ -1281,5 +1307,4 @@ method add_new_relationship(this: FedoraRequest, predicate:string, obj: string, 
 when isMainModule:
   let fedora_connection = initFedoraRequest(pid_part="test", output_directory="output")
   fedora_connection.results = fedora_connection.populate_results()
-  echo fedora_connection.change_content_models("sp%5fbasic%5fimage").successes
-  #echo fedora_connection.add_random_relationship_for_testing().successes
+  echo fedora_connection.change_model_to_binary("sp%5fbasic%5fimage").successes
